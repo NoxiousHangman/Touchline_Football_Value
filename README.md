@@ -49,16 +49,6 @@ While the server is running, the updater refreshes match-data snapshots older th
 
 Updates recompute estimates using new statistics. They **do not** retrain the model or update the historical valuations, fixed exchange rate or fee premium. Those inputs require a reviewed replacement release. The Transfermarkt community dataset is a dated input, not a live valuation feed.
 
-## Deploy on Render
-
-The repository includes [render.yaml](render.yaml) for a **Free Docker web service** using `main`, a single instance and `/healthz`. The Dockerfile starts the production Waitress server and verifies the packaged model/data hashes during the build.
-
-For a Blueprint deployment, connect this repository and sync `render.yaml`. If you created a Web Service manually, use Docker, the Free plan, `main`, the repository root as build context and `/healthz`; leave Docker Command empty. A manually created service does not automatically adopt Blueprint settings just because this file exists. See the [deployment guide](docs/DEPLOYMENT.md).
-
-When Render reports the service as **Live**, open its assigned URL followed by `/live`. The configuration enables deploys on new commits to `main`; Render's [Blueprint reference](https://render.com/docs/blueprint-spec) explains these fields.
-
-Render's free service can sleep after 15 idle minutes, and filesystem changes are temporary. Updating resumes when the server wakes. Initial data loading can take several minutes, particularly if packaged snapshots have expired. See [Render's free-service limits](https://render.com/docs/free).
-
 ## Run locally
 
 With Docker installed, run from the repository root:
