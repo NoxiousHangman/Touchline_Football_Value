@@ -166,7 +166,7 @@ class LiveStore:
 
     def _data(self):
         cached = {code: self.read_cache(path) for code, path in self.paths().items()}
-        if any(self.age(r) > 6 * 3600 for r in cached.values()):
+        if os.environ.get("TOUCHLINE_AUTO_UPDATE", "1") != "0" and any(self.age(r) > 6 * 3600 for r in cached.values()):
             self.request_refresh()
         result = {"players": [], "available": False, "leagues": {}}
         for code, snapshot in cached.items():
@@ -175,6 +175,7 @@ class LiveStore:
             result["leagues"][code] = {"name": LEAGUES[code], "available": available, "players": len(rows),
                                       "fetched_at": snapshot.get("fetched_at") if snapshot else None,
                                       "refresh_due": self.age(snapshot) > 6 * 3600,
+                                      "club_warnings": snapshot.get("coverage", {}).get("club_warnings", []) if available else [],
                                       "latest_completed_fixture": snapshot.get("coverage", {}).get("latest_completed_fixture") if snapshot else None}
             if not available:
                 continue
