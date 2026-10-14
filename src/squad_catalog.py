@@ -26,10 +26,14 @@ def espn_squad(athletes, teams, detailed):
     for a in athletes:
         stats = {s["name"]: s["value"] for c in a.get("statistics", {}).get("splits", {}).get("categories", []) for s in c.get("stats", [])}
         detail = details.get(str(a["id"]), {})
+        warning = a.get("statistics_unavailable_reason")
+        if warning:
+            stats, detail = {}, {}
         rows.append(dict(id=str(a["id"]), name=a["fullName"], aliases=[a.get("displayName")],
                          dob=a.get("dateOfBirth"), position=a.get("position", {}).get("displayName", "Unknown"),
                          club=clubs.get(a["club_id"], "Unknown"), minutes_played=detail.get("minutes"),
-                         goals=stats.get("totalGoals"), appearances=stats.get("appearances"), assists=stats.get("goalAssists")))
+                         goals=stats.get("totalGoals"), appearances=stats.get("appearances"), assists=stats.get("goalAssists"),
+                         statistics_unavailable_reason=warning))
     return rows
 
 
@@ -53,7 +57,7 @@ def expand_squad(snapshot, roster, players, values, code, league, source, now):
         prior = priors.get(tm_id, {})
         value = prior.get("preseason_value_million_eur")
         prior_gbp = float(value) * 1e6 * snapshot["fx"]["eur_to_gbp"] if value is not None and pd.notna(value) else None
-        model = model_rows.get(tm_id)
+        model = None if r.get("statistics_unavailable_reason") else model_rows.get(tm_id)
         if model:
             record = dict(model, valuation_basis="model", reference_market_value_gbp=None,
                           valuation_value_gbp=model["predicted_market_value_gbp"], coverage_note="Current-season model estimate.")
@@ -69,6 +73,8 @@ def expand_squad(snapshot, roster, players, values, code, league, source, now):
                     "A current model estimate is unavailable; showing the dated preseason value.")
             if prior_gbp is None:
                 note = "Profile only: no safely matched, qualifying preseason valuation. No price has been invented."
+            if r.get("statistics_unavailable_reason"):
+                note = r["statistics_unavailable_reason"] + " " + note
             record = dict(player_id=tm_id if tm_id is not None else local_id, player_name=profile.get("name", r["name"]),
                           observation_date=now.date().isoformat(), season_start_year=season, position=profile.get("position", r["position"]),
                           competition_code=code, league=league, club=r["club"], age=age, minutes_played=r.get("minutes_played"),

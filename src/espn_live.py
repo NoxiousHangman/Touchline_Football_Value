@@ -115,6 +115,23 @@ def read_fixtures(payload, slug, season, now):
     return fixtures
 
 
+def read_team_data(client, team, slug, season, now):
+    """A bad club schedule must not suppress verified data for every other club."""
+    roster = client.get(f"{SITE}/{slug}/teams/{team['id']}/roster?season={season}")
+    validate_season(roster, season)
+    if roster.get("team", {}).get("id") != team["id"]:
+        raise ValueError("ESPN roster team differs.")
+    warning = None
+    try:
+        schedule = client.get(f"{SITE}/{slug}/teams/{team['id']}/schedule?season={season}")
+        fixtures = read_fixtures(schedule, slug, season, now)
+    except (requests.RequestException, ValueError, KeyError):
+        fixtures = []
+        warning = "Current league fixtures could not be verified; match statistics and model estimates are unavailable for this club."
+    athletes = [dict(a, club_id=team["id"], statistics_unavailable_reason=warning) for a in roster["athletes"]]
+    return athletes, fixtures, warning
+
+
 def refresh_league(code, now=None, force=False):
     now = now or datetime.now(timezone.utc)
     slug, name, team_count = LEAGUES[code]
@@ -139,23 +156,20 @@ def refresh_league(code, now=None, force=False):
     print(f"{name}: checking {len(teams)} current squads...", flush=True)
 
     def team_data(team):
-        roster = client.get(f"{SITE}/{slug}/teams/{team['id']}/roster?season={season}")
-        validate_season(roster, season)
-        if roster.get("team", {}).get("id") != team["id"]:
-            raise ValueError("ESPN roster team differs.")
-        schedule = client.get(f"{SITE}/{slug}/teams/{team['id']}/schedule?season={season}")
-        fixtures = read_fixtures(schedule, slug, season, now)
-        athletes = [dict(a, club_id=team["id"]) for a in roster["athletes"]]
-        return athletes, fixtures
+        return read_team_data(client, team, slug, season, now)
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(team_data, teams))
-    athletes = [a for rows, _ in results for a in rows]
-    fixtures = [f for _, rows in results for f in rows]
+    athletes = [a for rows, _, _ in results for a in rows]
+    fixtures = [f for _, rows, _ in results for f in rows]
+    warnings = [{"club": team["displayName"], "message": result[2]}
+                for team, result in zip(teams, results) if result[2]]
+    if not fixtures:
+        raise ValueError("No verified current league fixtures; previous snapshot retained.")
     identity_rows = [dict(id=str(a["id"]), name=a["fullName"], dob=a.get("dateOfBirth"),
                           aliases=[a.get("displayName")]) for a in athletes]
     matched = match_profiles(identity_rows, players)
-    candidates = [a for a in athletes if str(a["id"]) in matched and
+    candidates = [a for a in athletes if not a.get("statistics_unavailable_reason") and str(a["id"]) in matched and
                   flatten_stats(a.get("statistics", {})).get("appearances", 0) >= 2]
     print(f"{name}: reading season totals for {len(candidates)} matched players...", flush=True)
     omitted = []
@@ -199,7 +213,8 @@ def refresh_league(code, now=None, force=False):
               "age", "minutes_played", "goals", "assists", "appearances", "goals_per90", "assists_per90", "predicted_market_value_gbp",
               "preseason_value_gbp", "preseason_valuation_date", "preseason_value_missing", "predates_training_cutoff",
               "missing_numeric_features", "estimate_available", "statistics_source", "fetched_at"]
-    coverage.update(roster_players=len(athletes), detailed_candidates=len(candidates), omitted_statistics=len(omitted))
+    coverage.update(roster_players=len(athletes), detailed_candidates=len(candidates), omitted_statistics=len(omitted),
+                    club_warnings=warnings)
     result = dict(status="experimental", fetched_at=fetched_at, source=f"https://www.espn.com/soccer/league/_/name/{slug}",
                   competition_code=code, coverage=coverage, fx=meta["fx"], historical_metrics=meta["metrics"],
                   historical_elite_metrics=meta["value_bands"]["elite_50m_plus"],
