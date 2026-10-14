@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: touchline
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: TOUCHLINE_AUTO_UPDATE
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"
