@@ -9,7 +9,7 @@ credentials, logs, source-conversation files and unrelated experiments.
 ## Put it online
 
 1. Extract `touchline-ready-to-host.zip` to a new folder. Keep the structure intact.
-2. Create a **private GitHub repository** and upload the extracted contents,
+2. Use the public [Touchline repository](https://github.com/NoxiousHangman/Touchline_Football_Value) and upload the extracted contents,
    including `deploy/assets`. These assets are required; uploading only the HTML
    or Python files will not work. Do not add your `.env` or account tokens.
 3. In [Render](https://dashboard.render.com/), choose **New → Blueprint** and
