@@ -1,124 +1,93 @@
-# Publish Touchline on Render's free plan
+# Touchline
 
-This package is prepared for a public hobby/demo website. It is not published yet.
-It includes the trained in-season model, dated input data, cached live snapshots,
-and precomputed season-history predictions. No API token or paid data source is
-needed. Do not upload the original workspace: use the release zip, which excludes
-credentials, logs, source-conversation files and unrelated experiments.
+**Find your next signing.** Explore football player values, compare potential targets and build a shortlist across Europe's top five leagues, with every amount shown in pounds.
 
-## Put it online
+Touchline is a Python football analysis website with a trained market-value model and an illustrative transfer-fee scenario. This repository contains the deployable website, its model and the packaged data needed to start it.
 
-1. Extract `touchline-ready-to-host.zip` to a new folder. Keep the structure intact.
-2. Use the public [Touchline repository](https://github.com/NoxiousHangman/Touchline_Football_Value) and upload the extracted contents,
-   including `deploy/assets`. These assets are required; uploading only the HTML
-   or Python files will not work. Do not add your `.env` or account tokens.
-3. In [Render](https://dashboard.render.com/), choose **New → Blueprint** and
-   connect that repository. Render reads the included `render.yaml`.
-4. Confirm the service is **Free**, with the Docker runtime, and deploy. No paid
-   database, persistent disk or domain is required. Keep paid add-ons disabled;
-   review account usage limits rather than enabling chargeable overages.
-5. Wait until the build and `/healthz` check pass, then open the assigned
-   `https://<your-service>.onrender.com/live` address. This is the shareable website
-   link. The loopback `127.0.0.1` address works only on your computer.
-6. Check all five league statuses, search for a player, test budget filtering and
-   compare two saved players. An initial update may take several minutes.
+## Explore the site
 
-The release source must sit at the repository root, not inside an extra enclosing
-folder. If using **New → Web Service** instead, select Docker, Free, the root
-`Dockerfile`, and health-check path `/healthz`. Leave Docker Command empty.
+Open **`/live`** on your deployed website for the current-season player browser. The **Season history** link opens historical predictions at `/`.
 
-## Free hosting limits
+1. Set a transfer budget and age range, then choose a position and sorting order.
+2. Select **Find players** and search by player or club. Narrow the results to a league if needed.
+3. Open a player to see their value, available league statistics, data timestamp and explanation of the estimate.
+4. Save players using the bookmark button. Expand **Saved shortlist** to compare up to three players side by side.
+5. Switch between the default **transfer-fee scenario** and the underlying **market-value estimate** to understand the difference.
 
-Render's free web service sleeps after 15 minutes without inbound traffic and
-may take about a minute to wake. Its local disk changes are lost on sleep/restart
-or redeploy. The image includes dated seed snapshots; the server checks freshness
-and fetches new data on waking. A seed older than 48 hours is not shown as live.
-If providers cannot be reached, affected leagues can remain unavailable until a
-successful refresh. Do not use artificial traffic to keep a free instance awake.
+Shortlists are saved in your browser; they do not require an account and do not sync between devices. Budget ranges filter the selected value view. They are search controls, not confidence intervals.
 
-The six-hour updater runs **only while the server is awake**. Free hosting cannot
-promise uninterrupted scheduled updates or production availability. Shortlists
-are saved on each visitor's browser, so server restarts do not delete them.
-Models, fee premium, preseason valuations and the fixed GBP conversion do not
-automatically retrain or change. Rebuild the bundle to update those inputs.
+### League coverage
 
-The service uses one process and four HTTP threads so there is only one updater.
-Requests share a 10-second combined snapshot cache. History is precomputed and
-live identity/valuation inputs are trimmed to reduce memory. Render Free has
-512 MB RAM; check actual memory and provider request volume after deployment.
-Do not scale this filesystem-based design to multiple instances without shared
-storage and a single coordinated updater.
-
-## Configuration
-
-| Variable | Default / purpose |
+| League | Current statistics source |
 | --- | --- |
-| `PORT` | Render supplies this; container default is `10000` |
-| `HOST` | Docker uses `0.0.0.0`; a direct local run uses `127.0.0.1` |
-| `RENDER_EXTERNAL_URL` | Supplied by Render; used for the sitemap and HTTPS headers |
-| `PUBLIC_BASE_URL` | Optional bare HTTPS origin for a custom domain |
-| `TOUCHLINE_AUTO_UPDATE` | `1`; use `0` only for an offline test |
-| `TOUCHLINE_DATA_DIR` | Container's writable packaged input/cache folder |
-| `TOUCHLINE_MODELS_DIR` | Container's trusted model folder |
-| `TOUCHLINE_HISTORY_PATH` | Packaged historical prediction snapshot |
+| Premier League | Official Fantasy Premier League |
+| La Liga | ESPN |
+| Bundesliga | ESPN |
+| Serie A | ESPN |
+| Ligue 1 | ESPN |
 
-No environment file is automatically loaded. Set values in the host dashboard.
-Never accept model uploads from visitors: joblib files are executable artifacts.
-Manual public refresh requests are disabled. The server downloads from its fixed
-football sources only; users cannot supply download URLs or filesystem paths.
-Raw files, model artifacts, `.env` and repository contents have no HTTP routes.
-The host terminates HTTPS. Request body/header sizes and concurrent connections
-are bounded; errors return a generic message rather than a traceback.
+Coverage varies by provider and player. Missing statistics stay unavailable rather than being presented as zero. The packaged history contains 4,306 players; current-season totals change as sources update.
 
-## Local verification of the same production server
+## How the values work
 
-With Docker installed, from the extracted release directory:
+The current-season model combines a dated preseason valuation with age, position, league and available match statistics. A model estimate requires an unambiguous player identity and at least 180 verified league minutes. Where an estimate is unavailable, the site may show a clearly labelled dated reference or no price.
 
-```powershell
+The main view applies an approximately **33.3% premium** to the model value or eligible dated reference:
+
+```text
+Illustrative transfer fee = base market value × 1.333…
+Example: £60m market value → £80m fee scenario
+```
+
+That multiplier comes from the median fee-to-value ratio in a selected 25-player reference table. The transactions were not independently verified, and this is not a trained or validated transfer-fee model. Actual negotiations, contracts, injuries and club circumstances can produce very different fees. Values can exceed £200m; there is no artificial £200m ceiling.
+
+All amounts use the fixed presentation conversion **€1 = £0.85950**. This is not a live exchange-rate feed. The experimental current-season model supports September–April; full-season validation remains pending. The site's **Methodology** panel and [About page](web/about.html) explain the limitations.
+
+## Keeping data current
+
+While the server is running, the updater refreshes match-data snapshots older than six hours. Each league shows its own freshness information. Recent cached data can remain available during a provider failure; snapshots older than 48 hours are hidden until a successful refresh.
+
+Updates recompute estimates using new statistics. They **do not** retrain the model or update the historical valuations, fixed exchange rate or fee premium. Those inputs require a reviewed replacement release. The Transfermarkt community dataset is a dated input, not a live valuation feed.
+
+## Deploy on Render
+
+The repository includes [render.yaml](render.yaml) for a **Free Docker web service** using `main`, a single instance and `/healthz`. The Dockerfile starts the production Waitress server and verifies the packaged model/data hashes during the build.
+
+For a Blueprint deployment, connect this repository and sync `render.yaml`. If you created a Web Service manually, use Docker, the Free plan, `main`, the repository root as build context and `/healthz`; leave Docker Command empty. A manually created service does not automatically adopt Blueprint settings just because this file exists. See the [deployment guide](docs/DEPLOYMENT.md).
+
+When Render reports the service as **Live**, open its assigned URL followed by `/live`. The configuration enables deploys on new commits to `main`; Render's [Blueprint reference](https://render.com/docs/blueprint-spec) explains these fields.
+
+Render's free service can sleep after 15 idle minutes, and filesystem changes are temporary. Updating resumes when the server wakes. Initial data loading can take several minutes, particularly if packaged snapshots have expired. See [Render's free-service limits](https://render.com/docs/free).
+
+## Run locally
+
+With Docker installed, run from the repository root:
+
+```sh
 docker build -t touchline .
 docker run --rm -p 127.0.0.1:8766:10000 touchline
 ```
 
-Open `http://127.0.0.1:8766/live`. The normal local development server can continue
-on port 8765. Docker is optional for using the existing project locally.
+Open `http://127.0.0.1:8766/live`. No paid API or token is required for the packaged website. Preserve the pinned dependencies when using the supplied model.
 
-The release pins the Python dependencies to the training environment. Do not
-upgrade scikit-learn independently of the saved model; the application checks
-the model's training version before live inference.
+## Project layout
 
-## Build another release from the original workspace
+| Path | Purpose |
+| --- | --- |
+| `web/` | Player browser, About and Privacy pages |
+| `app.py`, `serve.py` | Prediction service and production entry point |
+| `src/` | Collection, preparation, modelling and HTTP modules |
+| `deploy/assets/` | Trained model, dated inputs, snapshots and integrity manifest |
+| `docs/` | Deployment, source attribution and fee reference |
+| `scripts/check_release.py` | Verifies packaged model/data integrity |
 
-Use the trusted training environment, with no `TOUCHLINE_HISTORY_PATH` override:
+Built with Python, requests, pandas, scikit-learn, matplotlib and Waitress, with an HTML/CSS/JavaScript interface. This is the hosting release, not the full research workspace or a complete retraining dataset.
 
-```powershell
-.\.venv\Scripts\python.exe scripts/prepare_release.py
-.\.venv\Scripts\python.exe scripts/check_release.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests
-```
+## Sources and attribution
 
-The output is `dist/touchline-ready-to-host.zip`. Refresh locally first if you want
-fresh seed snapshots. Original timestamps are preserved. The builder does not
-retrain, fetch third-party data, publish externally or modify the original model.
-`deploy/assets/manifest.json` records SHA-256 hashes verified in the image build.
-It also records the season and input cutoff; rebuild for a new season.
+- [Official Fantasy Premier League](https://fantasy.premierleague.com/) supplies Premier League match statistics; fantasy prices and fantasy assists are not used as market values or comparable assists.
+- [ESPN](https://www.espn.com/soccer/) supplies public squad and statistics feeds for the other four leagues. Availability is not guaranteed.
+- [dcaribou/transfermarkt-datasets](https://github.com/dcaribou/transfermarkt-datasets) supplies historical statistics, identities and valuations. This is a community dataset, not an official Transfermarkt API. Snapshot provenance is included with the assets.
+- The alternative [football-data.org](https://www.football-data.org/) collector uses an environment-variable token. **Football data provided by the Football-Data.org API.** It is not required for the current live website.
 
-## Attribution and publication scope
-
-The site includes visible sources, an About page explaining estimates and a
-Privacy page explaining browser storage and hosting logs. Keep them in the public
-version. The Transfermarkt dataset publisher declares CC0; its provenance is
-included. FPL and ESPN remain third-party sources, and public endpoint access is
-not itself a blanket redistribution licence. Check the providers' current terms
-for your intended public/commercial use. No endorsement or official partnership
-is claimed. No player photographs or club crest rights are assumed.
-
-The fee uplift uses an unverified, selected 25-player reference sample, not a
-validated current transfer-fee dataset. It is presented as an illustrative
-scenario. Full-season validation is still pending and is not claimed complete.
-
-Hosting references checked 6 October 2026:
-- [Render free plan and limits](https://render.com/docs/free)
-- [Docker deployment](https://render.com/docs/docker)
-- [Blueprint configuration](https://render.com/docs/blueprint-spec)
-- [Compute plans](https://render.com/docs/compute-plans)
-- [Waitress server options](https://docs.pylonsproject.org/projects/waitress/en/stable/arguments.html)
+Touchline is an independent project, without provider endorsement. Retain source credits and the site's About and Privacy pages. See [data sources](docs/DATA_SOURCES.md) and [privacy information](web/privacy.html) for more detail.

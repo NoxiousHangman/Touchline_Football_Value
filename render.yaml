@@ -3,8 +3,15 @@ services:
     name: touchline
     runtime: docker
     plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    numInstances: 1
     healthCheckPath: /healthz
     envVars:
+      - key: HOST
+        value: "0.0.0.0"
       - key: TOUCHLINE_AUTO_UPDATE
         value: "1"
       - key: OPENBLAS_NUM_THREADS
