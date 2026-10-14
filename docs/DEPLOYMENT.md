@@ -1,6 +1,7 @@
 # Publish Touchline on Render's free plan
 
-This package is prepared for a public hobby/demo website. It is not published yet.
+This package runs Touchline as a public hobby/demo website. Deployment status and
+the assigned public URL are shown in your Render dashboard.
 It includes the trained in-season model, dated input data, cached live snapshots,
 and precomputed season-history predictions. No API token or paid data source is
 needed. Do not upload the original workspace: use the release zip, which excludes
@@ -26,6 +27,21 @@ credentials, logs, source-conversation files and unrelated experiments.
 The release source must sit at the repository root, not inside an extra enclosing
 folder. If using **New → Web Service** instead, select Docker, Free, the root
 `Dockerfile`, and health-check path `/healthz`. Leave Docker Command empty.
+
+## Updating an existing Render connection
+
+For a Blueprint-managed service, sync the latest `render.yaml`. It explicitly
+selects `main`, `./Dockerfile`, the repository-root build context, one Free
+instance, `/healthz` and automatic deployments on commits. It binds the server
+to `0.0.0.0` and lets Render supply `PORT`.
+
+For a manually created Web Service, check those settings in the dashboard;
+committing `render.yaml` does not convert the service into a Blueprint. Retain
+the existing service rather than creating a second one. Use **Manual Deploy →
+Deploy latest commit** if automatic deployments are disabled. Wait for **Live**,
+then check `/healthz`, `/live`, `/about` and `/privacy` on the assigned public URL.
+The health endpoint confirms the server is running; each league's freshness
+status separately reports whether current statistics are available.
 
 ## Free hosting limits
 
@@ -88,6 +104,9 @@ the model's training version before live inference.
 
 ## Build another release from the original workspace
 
+This section is for the original training workspace. The public hosting release
+does not include the full training data, test suite or `prepare_release.py`.
+
 Use the trusted training environment, with no `TOUCHLINE_HISTORY_PATH` override:
 
 ```powershell
@@ -116,7 +135,7 @@ The fee uplift uses an unverified, selected 25-player reference sample, not a
 validated current transfer-fee dataset. It is presented as an illustrative
 scenario. Full-season validation is still pending and is not claimed complete.
 
-Hosting references checked 6 October 2026:
+Blueprint and free-service references checked 14 October 2026:
 - [Render free plan and limits](https://render.com/docs/free)
 - [Docker deployment](https://render.com/docs/docker)
 - [Blueprint configuration](https://render.com/docs/blueprint-spec)
