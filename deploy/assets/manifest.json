@@ -1,0 +1,20 @@
+{
+  "created_at": "2026-10-06T19:04:37.908207+00:00",
+  "season": 2026,
+  "history_players": 4306,
+  "identity_rows": 50149,
+  "valuation_rows": 44039,
+  "valuation_cutoff": "2025-07-01",
+  "files": {
+    "data/processed/inseason-live-ES1.json": "ec927e109ea3ae92187d5bfcd3d34bde34b7be2c54b326f06dc5826747f1898a",
+    "data/processed/inseason-live-FR1.json": "a526aab404eafe54f41faccfc95b6b95e4b1005e9e1ee13229f8759902ad6e0d",
+    "data/processed/inseason-live-IT1.json": "fa4789e41e86f6ab8d45a9539cf444b0651b6fea2a9e5c22b989232a35b6cb23",
+    "data/processed/inseason-live-L1.json": "44db21486b10fd9cef22f0a66bfbeff099be8ac1446ff5c068125381a6ad422d",
+    "data/processed/inseason-live.json": "54839328f2da0e3972b670349875435f7037d48331372a90f53489fe2a99f773",
+    "data/raw/transfermarkt/player_valuations.csv.gz": "967204a3293202c4fe8d13449822594b6d08c349f96c189e078d598cad1a929d",
+    "data/raw/transfermarkt/players.csv.gz": "2583c26065d9f5f98efbcfea49ec2fd75a17842b96171a572ebcb7557cee8e76",
+    "history.json.gz": "40b93ae35896bffff8fbb0b10004bbd2c5bf5a6cef9e435272039f19d4842f24",
+    "models/inseason-fpl-v1/model.joblib": "e2a5858393570b3b8f47231643671411e790f8258b1ed5bc05ad73a968f8e2b3",
+    "source-provenance.json": "95212d1464e4ce87995713244b034f118dd3a12b5a19ca094ef6f2beaa04680e"
+  }
+}
